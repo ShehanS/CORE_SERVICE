@@ -14,6 +14,8 @@ import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bson.types.ObjectId;
 import play.libs.Json;
+
+import javax.naming.directory.SearchResult;
 import java.util.ArrayList;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
@@ -58,15 +60,20 @@ public class ExternalAPIDAO {
     }
 
 
-    protected ArrayList<Document> getQuery(String col, BasicDBObject query){
+    protected ArrayList<Document> getQueryDoc(String col, BasicDBObject query){
+        SearchResult result = null;
         ArrayList<Document> DocArrayList = new ArrayList<>();
         collection = db.getCollection(col);
         MongoCursor<Document> cursor= collection.find(query).iterator();
+
         try{
+
+
             while(cursor.hasNext()){
                 Document document = cursor.next();
                 DocArrayList.add(document);
             }
+
         }catch (Exception e){
             e.printStackTrace();
         }finally {

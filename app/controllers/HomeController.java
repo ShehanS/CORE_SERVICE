@@ -37,9 +37,27 @@ private JWTUtils jwtUtils;
      * <code>GET</code> request with a path of <code>/</code>.
      */
     public Result login(Http.Request request) {
+        Map<String, String> res = new HashMap<>();
+        res.put("status","failed");
+        res.put("message","cannot find user");
+
         JsonNode userLogin = request.body().asJson();
-        String JWTToken = jwtUtils.genarateJWT(userLogin);
-        return ok(JWTToken);
+        if (taskDAO.findLoginUser(userLogin)==false){
+            Map<String, String> resUser = new HashMap<>();
+            String JWTToken = jwtUtils.genarateJWT(userLogin);
+            JsonNode user = taskDAO.findUser(userLogin);
+            resUser.put("id",user.findPath("id").textValue());
+            resUser.put("username",user.findPath("username").textValue());
+            resUser.put("role",user.findPath("role").textValue());
+            resUser.put("access_token",JWTToken);
+
+
+
+            return ok(Json.toJson(resUser));
+        }else{
+            return ok(Json.toJson(res));
+        }
+
     }
 
     public Result index(Http.Request request) {
@@ -87,7 +105,6 @@ private JWTUtils jwtUtils;
             String userID = deleteUser.path("id").asText();
             return ok(taskDAO.RemoveUser(userID));
         }
-
         return ok(Json.toJson(res));
 
     }

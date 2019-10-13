@@ -1,5 +1,6 @@
 package users;
 import ExternalAPIs.ExternalAPIDAO;
+import JWT.JWTUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 
 
@@ -23,11 +24,12 @@ import java.util.Map;
 
 @Singleton
 public class TaskDAO extends ExternalAPIDAO {
-
+    private JWTUtils jwtUtils;
     private static String COLLECTION_NAME = "user";
     @Inject
-    public TaskDAO(Mongo mongo) {
+    public TaskDAO(Mongo mongo, JWTUtils jwtUtils) {
         super(mongo);
+        this.jwtUtils = jwtUtils;
     }
 //create system user
     public JsonNode createSystemUser(JsonNode u){
@@ -64,22 +66,47 @@ public class TaskDAO extends ExternalAPIDAO {
         BasicDBObject SearchQuery = new BasicDBObject();
         SearchQuery.put("username", user.findPath("username").textValue());
         SearchQuery.put("password", user.findPath("password").textValue());
+        Map<String, String> res = new HashMap<>();
+        res.put("status","bad");
+        ArrayList<Document> documents = getQueryDoc("user", SearchQuery);
+        if(!documents.isEmpty()) {
+            ArrayList<JsonNode> users = new ArrayList<>();
+            ObjectNode obj = Json.newObject();
+            for (Document document : documents) {
 
-        ArrayList<Document> documents = getQuery("user", SearchQuery);
-        ArrayList<JsonNode> users = new ArrayList<>();
-        ObjectNode obj = Json.newObject();
-        for (Document document : documents) {
+                obj.put("id", document.get("_id").toString());
+                obj.put("username", document.get("username").toString());
+                obj.put("email", document.get("email").toString());
+                obj.put("contact", document.get("contact").toString());
+                obj.put("role", document.get("role").toString());
 
-            obj.put("id", document.get("_id").toString());
-            obj.put("username", document.get("username").toString());
-            obj.put("email", document.get("email").toString());
-            obj.put("contact", document.get("contact").toString());
-            obj.put("role", document.get("role").toString());
+                JsonNode jsonNode = Json.toJson(obj);
+                users.add(jsonNode);
+            }
 
-            JsonNode jsonNode = Json.toJson(obj);
-            users.add(jsonNode);
+
+            return Json.toJson(users);
+        }else{
+            return Json.toJson(res);
         }
-        return Json.toJson(users);
+    }
+
+
+
+    public boolean findLoginUser(JsonNode u) {
+        boolean check = false;
+        BasicDBObject SearchQuery = new BasicDBObject();
+        SearchQuery.put("username", u.findPath("username").textValue());
+        SearchQuery.put("password", u.findPath("password").textValue());
+        Map<String, String> res = new HashMap<>();
+        res.put("status", "bad");
+        ArrayList<Document> documents = getQueryDoc("user", SearchQuery);
+        if (!documents.isEmpty()) {
+            check = false;
+        } else {
+            check = true;
+        }
+        return check;
     }
 
 
