@@ -7,12 +7,15 @@ import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.LoggerFactory;
-
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Created by Shehan Shalinda. This is my final project backed service.
+ * 2019/12/20
+ */
 public class JWTUtils {
     private final static String secret = "fj32Jfv02Mq33g0f8ioDkw";
     protected final org.slf4j.Logger logger = LoggerFactory.getLogger(getClass());
@@ -42,6 +45,7 @@ public class JWTUtils {
         }
         return result;
     }
+
     public boolean validateJWT(String token){
 
         Map<String, Object> error = new HashMap<>();

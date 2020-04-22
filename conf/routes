@@ -3,15 +3,45 @@
 # ~~~~
 
 # An example controller showing a sample home page
-GET     /all                        controllers.HomeController.getAllUsers(request: Request)
+GET     /api/get-all-users          controllers.HomeController.getAllUsers(request: Request)
+
 GET     /                           controllers.HomeController.index(request: Request)
+#GET     /download                  controllers.HomeController.index(request: Request)
+
+#GET         /ws                         controllers.WebScocket.socket
 
 
-POST     /create                    controllers.HomeController.createUser(request: Request)
-POST     /login                     controllers.HomeController.login(request: Request)
-POST     /delete                     controllers.HomeController.delete(request: Request)
-POST     /update                     controllers.HomeController.update(request: Request)
 
+
+POST     /api/get-config                controllers.HomeController.getFactoryConfig(request: Request)
+POST     /api/request                    controllers.HomeController.clientRequest(request: Request)
+POST     /api/create-user                controllers.HomeController.createUser(request: Request)
+POST     /api/login                      controllers.HomeController.login(request: Request)
+DELETE   /api/delete/:id                 controllers.HomeController.delete(id: String)
+
+GET      /api/user/:id                   controllers.HomeController.selectUser(id: String)
+GET     /api/request-status/:id              controllers.HomeController.requestStatus(id : String)
+PUT      /api/update/:id                 controllers.HomeController.update(id : String)
+PUT      /api/update-activation/:id                 controllers.HomeController.updateActivation(id : String)
+
+PUT      /api/update-profile/:id                 controllers.HomeController.updateProfile(id : String)
+
+PUT      /api/update-jobs/:id                 controllers.HomeController.courierUpdateJobs(id : String)
+
+POST      /api/update-location              controllers.HomeController.updateLocation(request: Request)
+
+GET    /api/get-courier-jobs/:id                controllers.HomeController.getCourierJobs(id : String)
+
+GET    /api/jobs-details/:id              controllers.HomeController.getJobsDetails(id : String)
+GET    /api/packge-details/:id               controllers.HomeController.getPackgeDetail(id : String)
+
+#POST     /api/client-all-requestProcess         controllers.HomeController.getAllRequests(request: Request)
+POST     /api/mark-attendance           controllers.HomeController.addAttendance(request: Request)
+POST     /api/get-attendance         controllers.HomeController.getAttendance(request: Request)
+
+####web Application###
+POST     /web/request                   controllers.WebApplicationController.getAllJobs(request: Request)
+GET      /web/client-details/:id        controllers.WebApplicationController.getUserAndCourierDetails(id: String)
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)

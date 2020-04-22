@@ -1,38 +1,44 @@
 package JobManagers;
 
 import com.fasterxml.jackson.databind.JsonNode;
+
 import model.Response;
-import org.bson.types.ObjectId;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import play.libs.Json;
 import users.TaskDAO;
 
 import javax.inject.Inject;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-public class Request {
-    private int requestID=0;
+/**
+ * Created by Shehan Shalinda. This is my final project backed service.
+ * 2020/04/01
+ */
+
+public class RequestProcess {
+    private static final Logger log = LogManager.getLogger(TaskDAO.class);
+    private int requestID = 0;
     private TaskDAO taskDAO;
     private ArrayList<Response> responseList;
+    private ArrayList<JsonNode> assigenedList;
+    private Map<String, String> message;
+    private JsonNode assignCourier;
+    private ArrayList<JsonNode> couriers;
+
     @Inject
-    public Request(TaskDAO taskDAO) {
-     this.taskDAO = taskDAO;
+    public RequestProcess(TaskDAO taskDAO) {
+        this.taskDAO = taskDAO;
     }
 
 
-    public JsonNode ManageRequest(JsonNode request){
+    public JsonNode manageRequest(JsonNode request) {
         Map<String, Object> response = new HashMap<>();
         Map<String, Object> responseMessage = new HashMap<>();
-
-
-
-        requestID = requestID +1;
+        requestID = requestID + 1;
         JsonNode saveRequest = taskDAO.clientRequest(request);
-        JsonNode courierInfo = taskDAO.findLocationBaseCourier(request.findPath("current_city").textValue());
         response.put("request_id", String.valueOf(requestID));
         response.put("client_request", saveRequest.findPath("id").textValue());
         response.put("request_date", request.findPath("request_date").textValue());
@@ -41,71 +47,107 @@ public class Request {
         response.put("courier_id", "");
         response.put("first_name", "");
         response.put("last_name", "");
-        response.put("current_city", "");
+        response.put("current_city", request.findPath("current_city").textValue());
         response.put("contact", "");
-        response.put("status", "Pending");
-
+        response.put("status", "pending");
+        response.put("courier_status", "pending");//cancel, collect, pending default value is pending
+        response.put("comment", "");              //special comments for if courier cancel jobs
         JsonNode saveResponse = taskDAO.addResponse(Json.toJson(response));
-       if (saveResponse.findPath("status").textValue()=="success") {
-         responseMessage.put("message","Request complected");
-         responseMessage.put("request_id", saveResponse.findPath("id").textValue());
-         responseMessage.put("status", saveResponse.findPath("status").textValue());
-         return Json.toJson(responseMessage);
-       }else{
-           responseMessage.put("message","Request not complected");
-           responseMessage.put("status", "failed");
-           return Json.toJson(responseMessage);
-       }
+
+        if (saveResponse.findPath("status").textValue() == "success") {
+            responseMessage.put("message", "RequestProcess complected");
+            responseMessage.put("request_id", saveResponse.findPath("id").textValue());
+            responseMessage.put("status", saveResponse.findPath("status").textValue());
+            return Json.toJson(responseMessage);
+        } else {
+            responseMessage.put("message", "RequestProcess not complected");
+            responseMessage.put("status", "failed");
+            return Json.toJson(responseMessage);
+        }
 
     }
 
 
-    public JsonNode responseStatus(JsonNode request){
-        String RequestID = request.findPath("id").textValue();
-        JsonNode status = taskDAO.getRequestUpdate(RequestID);
-        RequestProcess();
+    public JsonNode requestStatus(String id) {
+        Map<String, String> response = new HashMap<>();
+        try {
 
-        return status;
+            JsonNode assigner = taskDAO.getRequestUpdate(id);
+
+            if ((assigner.findPath("status").textValue().equals("working") || (assigner.findPath("status").textValue().equals("complete")))) {
+                response.put("args1", assigner.findPath("first_name").textValue());
+                response.put("args2", assigner.findPath("last_name").textValue());
+                response.put("args3", assigner.findPath("contact").textValue());
+                response.put("args4", assigner.findPath("save_id").textValue());
+                response.put("args5", assigner.findPath("status").textValue());
+                response.put("args6", "message");
+                return Json.toJson(response);
+            } else if (assigner.findPath("status").textValue().equals("pending")) {
+                response.put("args1", "Couriers are not available in your area.");
+                response.put("args5", "pending");
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Cannot proceed now");
+            errorResponse.put("code", e.getMessage());
+            return Json.toJson(errorResponse);
+        } finally {
+
+            return Json.toJson(response);
+        }
     }
 
 
-    private ArrayList<Response> getAllRequest(){
-        responseList  = taskDAO.getCurrentRequestQue();
+    private ArrayList<Response> getAllRequest() {
+        responseList = taskDAO.getCurrentRequestQue();
         return responseList;
     }
 
-    public void RequestProcess() {
 
+    public void requestProcess() {
+        log.info("Runnable process start: Request process\n");
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-            getAllRequest();
-            List<Response> pendingList= responseList
-                    .stream()
-                    .filter(responseList -> responseList.getStatus().equals("Pending"))
-                    .collect(Collectors.toList());
-            
+                getAllRequest();
+                List<Response> pendingList = responseList
+                        .stream()
+                        .filter(responseList -> responseList.getStatus().equals("pending"))
+                        .collect(Collectors.toList());
+                for (Response response : pendingList) {
+                    log.info("Passing for findCourierResponse : " + Json.toJson(response) + "\n");
+                    findCourierResponse(response);
+
+                }
 
             }
         };
         ScheduledExecutorService service = Executors
                 .newSingleThreadScheduledExecutor();
         service.scheduleAtFixedRate(runnable, 0, 5, TimeUnit.SECONDS);
-
-
     }
 
 
-    private void selectCouire(Response response){
-         System.out.println(Json.toJson(response));
+    private void findCourierResponse(Response response) {
+        log.info("{{method-findCourierResponse -response : " + Json.toJson(response) + "}}");
+        if (taskDAO.findLocationBaseCourier(response.getCurrent_city()) == null) {
+            log.info("Cannot find courier");
+        } else {
+            couriers = taskDAO.findLocationBaseCourier(response.getCurrent_city());
+            List<JsonNode> availableList = couriers.stream()
+                    .filter(c -> c.findPath("status").textValue().equals("working"))
+                    .filter(c -> c.findPath("job_running").booleanValue() == false)
+                    .collect(Collectors.toList());
+            for (JsonNode courier : availableList) {
+                //updating
+                log.info("Updating response db");
+                taskDAO.updateResponse(courier.findPath("current_city").textValue(), courier);
+            }
+
+        }
+
     }
-
-
-
-
-
-
-
 
 
 }
