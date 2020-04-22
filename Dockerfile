@@ -5,7 +5,7 @@ MAINTAINER Shehan Shalinda <shehan.salinda92@gmail.com>
 
 WORKDIR /app
 
-COPY core_service-1.0-SNAPSHOT ./core_service-1.0-SNAPSHOT
+COPY core_service-1.0-SNAPSHOT .
 
 COPY core_service-1.0-SNAPSHOT/conf/application.conf .
 
