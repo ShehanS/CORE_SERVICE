@@ -388,4 +388,51 @@ public class ExternalAPIDAO {
     }
 
 
+    protected Document aggregateQuery3(String from, String localField, String foreignField, String as, String matchField, String matchValue, String source) {
+        try {
+            Document result = null;
+            log.info("{{Class-" + TAG + " : method-aggregateQuery4}}");
+            Bson project = new Document("$project", new Document("client_obj_request", new Document("$toObjectId", "$client_request"))
+                    .append("date_time", "$date_time")
+                    .append("user_id", "$user_id")
+                    .append("first_name", "$first_name")
+                    .append("last_name", "$last_name")
+                    .append("current_city", "$current_city")
+                    .append("contact", "$contact")
+                    .append("request_date", "$request_date")
+                    .append("client_request", "$client_request")
+                    .append("courier_id", "$courier_id")
+                    .append("status", "$status")
+
+
+            );
+
+
+            Bson lookup = new Document("$lookup",
+                    new Document("from", from)
+                            .append("localField", "client_obj_request")
+                            .append("foreignField", foreignField)
+                            .append("as", as));
+
+
+            Bson matchFliter = new Document("$match", new Document(matchField, new ObjectId(matchValue)));
+            List<Bson> filters = new ArrayList<>();
+            filters.add(project);
+            filters.add(lookup);
+            filters.add(matchFliter);
+
+            AggregateIterable<Document> it = db.getCollection(source).aggregate(filters);
+            for (Document doc : it) {
+                result = doc;
+            }
+
+            return result;
+        } catch (MongoException e) {
+            log.error(e.getMessage());
+        }
+
+        return null;
+    }
+
+
 }

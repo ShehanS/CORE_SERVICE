@@ -34,6 +34,7 @@ public class TaskDAO extends ExternalAPIDAO {
     private static String FACTORY_CONFIG = "config_data";
     private static String COURIER_LOCATION = "courier_location";
     private static String RESPONSE = "response";
+    private static String TRANSACTIONS = "transactions";
     private static String CURRENT_DATE;
     private static String DAY_BEFORE_DATE;
     final String secretKey = "citypack";
@@ -773,14 +774,21 @@ public class TaskDAO extends ExternalAPIDAO {
 
 
     }
-
+//transaction
     public JsonNode courierUpdateJob(String id, JsonNode update) {
+        Clock clock = new Clock();
         BasicDBObject query = new BasicDBObject();
         BasicDBObject newDocument = new BasicDBObject();
         newDocument.put("courier_status", update.findPath("courier_status").textValue());
         newDocument.put("comment", update.findPath("comment").textValue());
         newDocument.put("status", "complete");
+        newDocument.put("collect_timestamp", new Date().getTime());
         query.put("_id", new ObjectId(id));
+        //create transaction record
+        Document clientResponseDetails = aggregateQuery3("client_request","client_request","","client_request","_id",id,"response");
+        System.out.println(clientResponseDetails);
+
+
         return (updateDoc(RESPONSE, query, newDocument));
 
 

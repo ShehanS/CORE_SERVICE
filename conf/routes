@@ -10,9 +10,6 @@ GET     /                           controllers.HomeController.index(request: Re
 
 #GET         /ws                         controllers.WebScocket.socket
 
-
-
-
 POST     /api/get-config                controllers.HomeController.getFactoryConfig(request: Request)
 POST     /api/request                    controllers.HomeController.clientRequest(request: Request)
 POST     /api/create-user                controllers.HomeController.createUser(request: Request)
