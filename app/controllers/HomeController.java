@@ -333,4 +333,34 @@ private JWTUtils jwtUtils;
     }
 
 
+    public Result getJobHistory(String id) {
+        Map<String, String> res = new HashMap<>();
+        res.put("status", "failed");
+        res.put("message", "authorization-failed");
+
+        if (verfyJWTAccess(request()) == true) {
+            return ok(taskDAO.getJobHistoryByQrId(id));
+
+        }
+        return ok(Json.toJson(res));
+
+    }
+
+
+    public Result courierJobTransfer(String id) {
+        Map<String, String> res = new HashMap<>();
+        JsonNode update = request().body().asJson();
+        res.put("status", "failed");
+        res.put("message", "authorization-failed");
+
+        if (verfyJWTAccess(request()) == true) {
+            return ok(taskDAO.jobTransfer(id, update));
+
+        }
+        return ok(Json.toJson(res));
+
+    }
+
+
+
 }

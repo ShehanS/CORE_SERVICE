@@ -31,7 +31,8 @@ PUT      /api/update-jobs/:id                 controllers.HomeController.courier
 POST      /api/update-location              controllers.HomeController.updateLocation(request: Request)
 
 GET    /api/get-courier-jobs/:id                controllers.HomeController.getCourierJobs(id : String)
-
+GET    /api/get-jobs-history/:id                controllers.HomeController.getJobHistory(id : String)
+PUT    /api/job-transfer/:id                controllers.HomeController.courierJobTransfer(id : String)
 GET    /api/jobs-details/:id              controllers.HomeController.getJobsDetails(id : String)
 GET    /api/packge-details/:id               controllers.HomeController.getPackgeDetail(id : String)
 

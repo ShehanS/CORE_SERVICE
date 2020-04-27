@@ -36,6 +36,9 @@ public class TaskDAO extends ExternalAPIDAO {
     private static String RESPONSE = "response";
     private static String CURRENT_DATE;
     private static String DAY_BEFORE_DATE;
+    private static String TRANSACTION = "transaction";
+
+
     final String secretKey = "citypack";
     private ASE ase;
     private Clock clock;
@@ -775,17 +778,122 @@ public class TaskDAO extends ExternalAPIDAO {
     }
 
     public JsonNode courierUpdateJob(String id, JsonNode update) {
+        Clock clock = new Clock();
+        Document transaction = new Document();
+        Map<String, Object> courier = new HashMap<>();
+        ArrayList<Object> history = new ArrayList<>();
         BasicDBObject query = new BasicDBObject();
         BasicDBObject newDocument = new BasicDBObject();
         newDocument.put("courier_status", update.findPath("courier_status").textValue());
         newDocument.put("comment", update.findPath("comment").textValue());
         newDocument.put("status", "complete");
         query.put("_id", new ObjectId(id));
+        Document jobDetails = aggregateQuery3("client_request", "client_request", "_id", "request_details", "_id", id, "response");
+        // courier.put("user_id",jobDetails.getString("user_id"));
+        courier.put("first_name", jobDetails.getString("first_name"));
+        courier.put("last_name", jobDetails.getString("last_name"));
+        courier.put("current_city", jobDetails.getString("current_city"));
+        courier.put("contact", jobDetails.getString("contact"));
+        //courier.put("request_date",jobDetails.getString("request_date"));
+        //courier.put("client_request",jobDetails.getString("client_request"));
+        courier.put("courier_id", jobDetails.getString("courier_id"));
+        courier.put("status", jobDetails.getString("status"));
+        courier.put("app_type", update.findPath("app_type").textValue());
+        //courier.put("job_id", id);
+        courier.put("tx_type", update.findPath("tx_type").textValue());
+        courier.put("date_time", new Date().getTime());
+        courier.put("date", clock.getCurrentDate());
+        history.add(courier);
+        transaction.put("client_request", jobDetails.get("request_details"));
+        transaction.put("qr_id", id);
+        transaction.put("couriers", history);
+
+        insertDoc(transaction, TRANSACTION);
         return (updateDoc(RESPONSE, query, newDocument));
-
-
-
     }
 
+
+    public JsonNode jobTransfer(String id, JsonNode courier) {
+        BasicDBObject query = new BasicDBObject();
+        Clock clock = new Clock();
+        Document newCourier = new Document();
+        Document previousCourier = new Document();
+        Document updatedJob = new Document();
+        Document updatedPreviousJob = new Document();
+        String qrID;
+        query.put("qr_id", id);
+
+        Document job = getQueryOneDoc(TRANSACTION, query);
+        List<Document> clientRequest = (List<Document>) job.get("client_request");
+        List<Document> courierList = (List<Document>) job.get("couriers");
+        //update previous courier
+        qrID = job.getString("qr_id");
+        for (Document courierDoc : courierList) {
+
+            previousCourier.put("first_name", courierDoc.getString("first_name"));
+            previousCourier.put("last_name", courierDoc.getString("last_name"));
+            previousCourier.put("current_city", courierDoc.getString("current_city"));
+            previousCourier.put("contact", courierDoc.getString("contact"));
+            previousCourier.put("courier_id", courierDoc.getString("courier_id"));
+            previousCourier.put("status", "transfer");
+            previousCourier.put("app_type", courierDoc.getString("app_type"));
+            previousCourier.put("tx_type", "out");
+            previousCourier.put("date_time", new Date().getTime());
+            previousCourier.put("date", clock.getCurrentDate());
+
+        }
+        courierList.add(previousCourier);
+        updatedPreviousJob.put("couriers", courierList);
+        updatedPreviousJob.put("qr_id", qrID);
+        updatedPreviousJob.put("client_request", clientRequest);
+        insertDoc(updatedPreviousJob, TRANSACTION);
+
+        //new courier
+        qrID = job.getString("qr_id");
+        newCourier.put("first_name", courier.findPath("first_name").textValue());
+        newCourier.put("last_name", courier.findPath("last_name").textValue());
+        newCourier.put("current_city", courier.findPath("current_city").textValue());
+        newCourier.put("contact", courier.findPath("contact").textValue());
+        newCourier.put("courier_id", courier.findPath("courier_id").textValue());
+        newCourier.put("status", courier.findPath("status").textValue());
+        newCourier.put("app_type", courier.findPath("app_type").textValue());
+        newCourier.put("tx_type", courier.findPath("tx_type").textValue());
+        newCourier.put("date_time", courier.findPath("date_time").asLong());
+        newCourier.put("date", courier.findPath("date").textValue());
+        courierList.add(newCourier);
+        updatedJob.put("client_request", clientRequest);
+        updatedJob.put("qr_id", qrID);
+        updatedJob.put("couriers", courierList);
+
+        insertDoc(updatedJob, TRANSACTION);
+        return Json.toJson(updatedJob);
+    }
+
+
+    public JsonNode getJobHistoryByQrId(String id) {
+        Document jobHistory;
+        Map<String, String> nullObject = new HashMap<>();
+        nullObject.put("error_code", "err01");
+        nullObject.put("message", "Couldn't find any record regarding this id");
+        BasicDBObject query = new BasicDBObject();
+        query.put("qr_id", id);
+        jobHistory = getSingelDocuent(TRANSACTION, query);
+        if (jobHistory == null) {
+            return Json.toJson(nullObject);
+        } else {
+            return Json.toJson(jobHistory);
+        }
+    }
+
+
+    public JsonNode undoJobTranser(String id) {
+        BasicDBObject query = new BasicDBObject();
+        BasicDBObject undoDocument = new BasicDBObject();
+        query.put("qr_id", id);
+        query.put("qr_id", id);
+
+
+        return null;
+    }
 
 }
