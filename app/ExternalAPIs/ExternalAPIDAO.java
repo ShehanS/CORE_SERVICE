@@ -178,6 +178,26 @@ public class ExternalAPIDAO {
     }
 
 
+    protected JsonNode updateDocArray(String col, BasicDBObject query, BasicDBObject newDocument) {
+
+        UpdateResult result = null;
+        collection = db.getCollection(col);
+        MongoCursor<Document> cursor = collection.find(query).iterator();
+        log.info("{{Class-" + TAG + " : method-updateDoc}}-Update document: query-" + query);
+        try {
+            BasicDBObject updateObject = new BasicDBObject();
+            updateObject.put("$set", newDocument);
+            result = collection.updateMany(query, updateObject);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        } finally {
+            cursor.close();
+        }
+        return Json.toJson(result);
+    }
+
+
+
     protected Document getQueryOneDoc(String col, BasicDBObject query) {
         log.info("{{Class-" + TAG + " : method-getQueryOneDoc}}-Get document: query-" + query);
         collection = db.getCollection(col);
@@ -349,6 +369,7 @@ public class ExternalAPIDAO {
         return null;
     }
 
+
     protected ArrayList<Document> aggregateQuery2(String from, String localField, String foreignField, String as, String matchField, String matchValue, String source) {
         ArrayList<Document> result = new ArrayList<>();
         try {
@@ -416,11 +437,13 @@ public class ExternalAPIDAO {
                             .append("as", as));
 
 
-            Bson matchFliter = new Document("$match", new Document(matchField, new ObjectId(matchValue)));
+            Bson matchFliter1 = new Document("$match", new Document(matchField, new ObjectId(matchValue)));
+            Bson matchFliter2 = new Document("$match", new Document("status", new Document("$ne", "complete")));
             List<Bson> filters = new ArrayList<>();
             filters.add(project);
             filters.add(lookup);
-            filters.add(matchFliter);
+            filters.add(matchFliter1);
+            filters.add(matchFliter2);
 
             AggregateIterable<Document> it = db.getCollection(source).aggregate(filters);
             for (Document doc : it) {
@@ -435,8 +458,23 @@ public class ExternalAPIDAO {
         return null;
     }
 
-    protected void agg4() {
-        
+    protected Document aggregate4(String col, String qrID, String courierID) {
+        Document result = null;
+        try {
+            Bson rule = new Document("$match", new Document("qr_id", qrID).append("couriers", new Document("$elemMatch", new Document("courier_id", courierID))));
+            List<Bson> filters = new ArrayList<>();
+            filters.add(rule);
+            AggregateIterable<Document> it = db.getCollection(col).aggregate(filters);
+
+            for (Document doc : it) {
+                result = doc;
+            }
+            return result;
+        } catch (MongoException e) {
+            log.error(e.getMessage());
+        }
+
+        return null;
     }
 
 

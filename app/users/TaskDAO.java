@@ -7,6 +7,7 @@ import JWT.JWTUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import database.Mongo;
 import model.Response;
@@ -19,7 +20,6 @@ import service.Clock;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.print.Doc;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -100,7 +100,7 @@ public class TaskDAO extends ExternalAPIDAO {
         } else {
             Map<String, Object> response = new HashMap<>();
             response.put("args1", "failed");
-            response.put("args5", "Exsisting user found. Please check NIC/passport number, email and username");
+            response.put("args5", "Existing user found. Please check NIC/passport number, email and username");
             return (Json.toJson(response));
 
         }
@@ -476,15 +476,15 @@ public class TaskDAO extends ExternalAPIDAO {
 
     //get app config
     public JsonNode getFactoryConfig(String token, String confType, String listName) {
-        BasicDBObject SearchQuery = new BasicDBObject();
+        BasicDBObject searchQuery = new BasicDBObject();
         Map<String, Object> factoryConf = new HashMap<>();
-        SearchQuery.put("token", token);
+        searchQuery.put("token", token);
         try {
 
-            SearchQuery.put("conf_type", confType);
-            SearchQuery.put("list_name", listName);
+            searchQuery.put("conf_type", confType);
+            searchQuery.put("list_name", listName);
             log.info("GET factory config\n");
-            Document configDoc = getQueryOneDoc(FACTORY_CONFIG, SearchQuery);
+            Document configDoc = getQueryOneDoc(FACTORY_CONFIG, searchQuery);
             if (!configDoc.isEmpty()) {
                 factoryConf.put("_id", configDoc.get("_id").toString());
                 factoryConf.put("item_list", configDoc.get("item_list"));
@@ -502,10 +502,14 @@ public class TaskDAO extends ExternalAPIDAO {
 
     //find courier
     public ArrayList<JsonNode> findLocationBaseCourier(String city) {
-        BasicDBObject SearchQuery = new BasicDBObject();
+        BasicDBObject searchQuery = new BasicDBObject();
         ArrayList<JsonNode> allCouriers = new ArrayList<>();
-        SearchQuery.put("current_city", city);
-        ArrayList<Document> courierDoc = getQueryDoc(COURIER_LOCATION, SearchQuery);
+        searchQuery.put("current_city", city);
+        //searchQuery.put("request_date",  clock.getCurrentDate());
+        ArrayList<Document> courierDoc = getQueryDoc(COURIER_LOCATION, searchQuery);
+
+
+
         try {
             if (!courierDoc.isEmpty()) {
                 for (Document document : courierDoc) {
@@ -533,13 +537,106 @@ public class TaskDAO extends ExternalAPIDAO {
     }
 
 
+    //assign courier by id
+    public JsonNode getCourierById(String id) {
+        Map<String, Object> courier = new HashMap<>();
+        BasicDBObject searchQuery = new BasicDBObject();
+        searchQuery.put("courier_id", id);
+        //searchQuery.put("request_date",  clock.getCurrentDate());
+
+
+        try {
+            Document document = getSingelDocuent(COURIER_LOCATION, searchQuery);
+
+            courier.put("id", document.get("_id").toString());
+            courier.put("courier_id", document.get("courier_id").toString());
+            courier.put("first_name", document.get("first_name").toString());
+            courier.put("last_name", document.get("last_name").toString());
+            courier.put("current_city", document.get("current_city").toString());
+            courier.put("contact", document.get("contact").toString());
+            courier.put("status", document.get("status").toString());
+            courier.put("job_running", document.getBoolean("job_running"));
+
+            return Json.toJson(courier);
+        } catch (MongoException e) {
+            log.error(e.getMessage());
+        }
+        return null;
+    }
+
+
+    public JsonNode assignCourierById(String courierID, String responseID) {
+        JsonNode courier = this.getCourierById(courierID);
+        JsonNode status = this.updateResponseByResponseID(responseID, courier);
+        return status;
+
+    }
+
+
+    public JsonNode checkCourierStatus(String id) {
+        Boolean status = false;
+        Map<String, Object> res = new HashMap<>();
+        BasicDBObject query = new BasicDBObject();
+        query.put("courier_id", id);
+        Document document = getSingelDocuent(COURIER_LOCATION, query);
+
+        if ((document == null) || (document.equals("null"))) {
+            status = false;
+            res.put("status", status);
+            res.put("message", "courier not found");
+
+        } else {
+            status = true;
+            res.put("status", status);
+            res.put("message", "courier is working");
+        }
+        return Json.toJson(res);
+    }
+
+
+    //getAllCouriers
+    public JsonNode getAllCouriers() {
+        BasicDBObject searchQuery = new BasicDBObject();
+        ArrayList<JsonNode> allCouriers = new ArrayList<>();
+        searchQuery.put("role", "Courier");
+        ArrayList<Document> courierDoc = getQueryDoc(USER_COLLECTION, searchQuery);
+
+        try {
+            if (!courierDoc.isEmpty()) {
+                for (Document document : courierDoc) {
+                    ObjectNode couriers = Json.newObject();
+                    // couriers.put("id", document.get("_id").toString());
+                    couriers.put("id", document.getObjectId("_id").toString());
+                    couriers.put("first_name", document.get("first_name").toString());
+                    couriers.put("last_name", document.get("last_name").toString());
+                    // couriers.put("current_city", document.get("current_city").toString());
+                    couriers.put("contact", document.get("contact").toString());
+                    //couriers.put("status", document.get("status").toString());
+                    // couriers.put("job_running", document.getBoolean("job_running"));
+                    allCouriers.add(couriers);
+                }
+                return Json.toJson(allCouriers);
+            }
+        } catch (MongoException e) {
+            log.error(e.getMessage());
+        }
+        return null;
+    }
+
+
+
+
+
+
+
+
+
     //find courier
     public long jobCountCourierWise(String id) {
         Clock clock = new Clock();
-        BasicDBObject SearchQuery = new BasicDBObject();
-        SearchQuery.put("courier_id", id);
-        SearchQuery.put("request_date", new BasicDBObject("$gt", clock.getDayBeforeDate()).append("$lte", clock.getCurrentDate()));
-        long jobCount = getDocCount(RESPONSE, SearchQuery);
+        BasicDBObject searchQuery = new BasicDBObject();
+        searchQuery.put("date_time", new BasicDBObject("$gt", clock.getMillPriviousDate()).append("$lte", clock.getMillCurrentEpoch()));
+        long jobCount = getDocCount(RESPONSE, searchQuery);
         return jobCount;
     }
 
@@ -571,11 +668,10 @@ public class TaskDAO extends ExternalAPIDAO {
     public ArrayList<Response> getCurrentRequestQue() {
         Clock clock = new Clock();
         log.info("Date - in query " + clock.getDayBeforeDate() + " to " + clock.getCurrentDate());
-        BasicDBObject SearchQuery = new BasicDBObject();
-        SearchQuery.put("request_date", new BasicDBObject("$gt", clock.getDayBeforeDate()).append("$lte", clock.getCurrentDate()));
-        System.out.println(SearchQuery);
+        BasicDBObject searchQuery = new BasicDBObject();
+        searchQuery.put("date_time", new BasicDBObject("$gt", clock.getMillPriviousDate()).append("$lte", clock.getMillCurrentEpoch()));
         ArrayList<Response> res = new ArrayList<>();
-        res = getAllResponseByQuery(RESPONSE, SearchQuery, -1);
+        res = getAllResponseByQuery(RESPONSE, searchQuery, -1);
         System.out.println(Json.toJson(res));
         return res;
     }
@@ -583,11 +679,22 @@ public class TaskDAO extends ExternalAPIDAO {
 
     public ArrayList<Response> getCurrentRequestQueDateWise(JsonNode request) {
         log.info("Date - in query " + request.findPath("start_date").asLong() + " to " + request.findPath("end_date").asLong());
-        BasicDBObject SearchQuery = new BasicDBObject();
-        SearchQuery.put("date_time", new BasicDBObject("$gt", request.findPath("start_date").asLong()).append("$lte", request.findPath("end_date").asLong()));
-        System.out.println(SearchQuery);
+        BasicDBObject searchQuery = new BasicDBObject();
+        searchQuery.put("date_time", new BasicDBObject("$gt", request.findPath("start_date").asLong()).append("$lte", request.findPath("end_date").asLong()));
         ArrayList<Response> res = new ArrayList<>();
-        res = getAllResponseByQuery(RESPONSE, SearchQuery, 1);
+        res = getAllResponseByQuery(RESPONSE, searchQuery, 1); //// issuese
+        System.out.println(Json.toJson(res));
+        return res;
+    }
+
+
+    public ArrayList<Response> getCurrentPendingRequestQueDateWise(JsonNode request) {
+        log.info("Date - in query " + request.findPath("start_date").asLong() + " to " + request.findPath("end_date").asLong());
+        BasicDBObject searchQuery = new BasicDBObject();
+        searchQuery.put("status", "pending");
+        searchQuery.put("date_time", new BasicDBObject("$gt", request.findPath("start_date").asLong()).append("$lte", request.findPath("end_date").asLong()));
+        ArrayList<Response> res = new ArrayList<>();
+        res = getAllResponseByQuery(RESPONSE, searchQuery, 1); //// issuese
         System.out.println(Json.toJson(res));
         return res;
     }
@@ -608,9 +715,25 @@ public class TaskDAO extends ExternalAPIDAO {
     }
 
 
+    //update response status
+    public JsonNode updateResponseByResponseID(String id, JsonNode update) {
+        BasicDBObject query = new BasicDBObject();
+        BasicDBObject newDocument = new BasicDBObject();
+        newDocument.put("contact", update.findPath("contact").textValue());
+        newDocument.put("courier_id", update.findPath("courier_id").textValue());
+        newDocument.put("last_name", update.findPath("last_name").textValue());
+        newDocument.put("first_name", update.findPath("first_name").textValue());
+        newDocument.put("status", update.findPath("status").textValue());
+        query.put("_id", new ObjectId(id));
+        return (updateDoc(RESPONSE, query, newDocument));
+
+    }
+
+
     public JsonNode getUserAndQueryDetails(String id) {
         Document result = aggregateQuery("client_request", "client_request", "_id", "request_details", "_id", id, "response");
         return Json.toJson(result);
+
     }
 
 
@@ -644,7 +767,7 @@ public class TaskDAO extends ExternalAPIDAO {
         Map<String, Object> jobs = new HashMap<>();
         BasicDBObject query = new BasicDBObject();
         query.put("courier_id", id);
-        query.put("request_date", clock.getCurrentDate());
+        query.put("date_time", new BasicDBObject("$gt", clock.getMillPriviousDate()).append("$lte", clock.getMillCurrentEpoch()));
         arrayList = getQueryDoc(CLIENT_REQEST_COLLECTION, query);
 
         for (Document doc : arrayList) {
@@ -777,6 +900,7 @@ public class TaskDAO extends ExternalAPIDAO {
 
     }
 
+
     public JsonNode courierUpdateJob(String id, JsonNode update) {
         Clock clock = new Clock();
         Document transaction = new Document();
@@ -885,15 +1009,80 @@ public class TaskDAO extends ExternalAPIDAO {
         }
     }
 
-
-    public JsonNode undoJobTranser(String id) {
-        BasicDBObject query = new BasicDBObject();
-        BasicDBObject undoDocument = new BasicDBObject();
-        query.put("qr_id", id);
-        query.put("qr_id", id);
-
-
-        return null;
+    /*
+    @aggregate4
+     db.getCollection("transaction").update(
+    {"qr_id":"5ea6da941c2e9c1e11875551", "couriers.courier_id" : "5e9ff50ae0fd8c12e76377d9"},
+         { "$set":
+    {
+      "couriers.$.status": "delete"
     }
+     },
+  {
+       multi: true
+   }
+)
+
+      */
+    public JsonNode undoJobTranser(String qrID, JsonNode request) {
+        String courierID = request.findPath("courier_id").textValue();
+        BasicDBObject query = new BasicDBObject();
+        Document doc = aggregate4(TRANSACTION, qrID, courierID);
+        List<Document> couriers = (List<Document>) doc.get("couriers");
+        query.put("qr_id", qrID);
+        query.append("couriers.courier_id", courierID);
+
+        BasicDBObject newDocument = new BasicDBObject();
+        for (Document courier : couriers) {
+            List<Document> fliteredCouriers = new ArrayList<>();
+            if (courier.getString("courier_id").equals(courierID)) {
+                System.out.println(courier);
+                fliteredCouriers.add(courier);
+                newDocument.put("couriers.$[].status", "undo");
+                updateDocArray(TRANSACTION, query, newDocument);
+            }
+
+
+        }
+
+        Map<String, String> r = new HashMap<>();
+
+        return Json.toJson(r);
+    }
+
+
+    public JsonNode getClientHistory(String id) {
+        BasicDBObject query = new BasicDBObject();
+        query.put("user_id", id);
+        ArrayList<Document> history = getQueryDoc(CLIENT_REQEST_COLLECTION, query);
+        return Json.toJson(history);
+    }
+
+
+    public JsonNode getClientRequest(String id) {
+        Map<String, Object> clientRequest = new HashMap<>();
+        ArrayList<Object> resRequest = new ArrayList<>();
+        BasicDBObject query = new BasicDBObject();
+        query.put("_id", new ObjectId(id));
+        Document request = getQueryForSingelDoc(CLIENT_REQEST_COLLECTION, query);
+        clientRequest.put("id", request.getObjectId("_id").toString());
+        clientRequest.put("user_id", request.getString("user_id"));
+        clientRequest.put("first_name", request.getString("first_name"));
+        clientRequest.put("last_name", request.getString("last_name"));
+        List<Document> location = (List<Document>) request.get("current_location");
+        clientRequest.put("current_location", location);
+        clientRequest.put("current_address", request.getString("current_address"));
+        clientRequest.put("current_city", request.getString("current_city"));
+        List<Document> items = (List<Document>) request.get("delevery_items");
+        clientRequest.put("delevery_items", items);
+        List<Document> receiver = (List<Document>) request.get("receiver_details");
+        clientRequest.put("receiver_details", receiver);
+        clientRequest.put("request_date", request.getString("request_date"));
+        clientRequest.put("date_time", request.getLong("date_time"));
+        clientRequest.put("contact", request.getString("contact"));
+        resRequest.add(clientRequest);
+        return Json.toJson(resRequest);
+    }
+
 
 }

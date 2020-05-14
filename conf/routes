@@ -35,6 +35,11 @@ GET    /api/get-jobs-history/:id                controllers.HomeController.getJo
 PUT    /api/job-transfer/:id                controllers.HomeController.courierJobTransfer(id : String)
 GET    /api/jobs-details/:id              controllers.HomeController.getJobsDetails(id : String)
 GET    /api/packge-details/:id               controllers.HomeController.getPackgeDetail(id : String)
+GET    /api/client-history/:id               controllers.HomeController.getClientHistory(id : String)
+
+GET    /web/get-all-couriers              controllers.WebApplicationController.getAllCouriers()
+
+PUT /api/undo-courier-job/:QRid                 controllers.HomeController.undoCourierJob(QRid : String)
 
 #POST     /api/client-all-requestProcess         controllers.HomeController.getAllRequests(request: Request)
 POST     /api/mark-attendance           controllers.HomeController.addAttendance(request: Request)
@@ -42,7 +47,12 @@ POST     /api/get-attendance         controllers.HomeController.getAttendance(re
 
 ####web Application###
 POST     /web/request                   controllers.WebApplicationController.getAllJobs(request: Request)
+POST     /web/pending-request           controllers.WebApplicationController.getAllPendingJobs(request: Request)
 GET      /web/client-details/:id        controllers.WebApplicationController.getUserAndCourierDetails(id: String)
+GET      /web/client-request/:id        controllers.WebApplicationController.getClientRequest(id: String)
+GET      /web/courier-status/:id        controllers.WebApplicationController.getCourierStatus(id: String)
+POST     /web/manual-assign             controllers.WebApplicationController.assignCourierByManual(request: Request)
+
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)

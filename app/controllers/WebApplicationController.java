@@ -2,6 +2,7 @@ package controllers;
 
 import JWT.JWTUtils;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.bson.Document;
 import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Http;
@@ -13,9 +14,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import JobManagers.RequestProcess;
+
 public class WebApplicationController extends Controller {
     private TaskDAO taskDAO;
     private JWTUtils jwtUtils;
+
 
     @Inject
     public WebApplicationController(TaskDAO taskDAO, JWTUtils jwtUtils) {
@@ -35,6 +39,18 @@ public class WebApplicationController extends Controller {
     }
 
 
+    public Result getAllPendingJobs(Http.Request request) {
+        JsonNode appRequest = request.body().asJson();
+        Map<String, String> res = new HashMap<>();
+        res.put("status", "failed");
+        res.put("message", "authorization-failed");
+        if (verfyJWTAccess(request) == true) {
+            return ok(Json.toJson(taskDAO.getCurrentPendingRequestQueDateWise(appRequest)));
+        }
+        return ok(Json.toJson(res));
+    }
+
+
     public Result getRequestUserWise(Http.Request request) {
         JsonNode appRequest = request.body().asJson();
         Map<String, String> res = new HashMap<>();
@@ -42,6 +58,17 @@ public class WebApplicationController extends Controller {
         res.put("message", "authorization-failed");
         if (verfyJWTAccess(request) == true) {
             return ok(Json.toJson(taskDAO.getCurrentRequestQueDateWise(appRequest)));
+        }
+        return ok(Json.toJson(res));
+    }
+
+
+    public Result getAllCouriers() {
+        Map<String, String> res = new HashMap<>();
+        res.put("status", "failed");
+        res.put("message", "authorization-failed");
+        if (verfyJWTAccess(request()) == true) {
+            return ok(taskDAO.getAllCouriers());
         }
         return ok(Json.toJson(res));
     }
@@ -56,6 +83,57 @@ public class WebApplicationController extends Controller {
         }
         return ok(Json.toJson(res));
     }
+
+
+    public Result getClientRequest(String id) {
+        Map<String, String> res = new HashMap<>();
+        res.put("status", "failed");
+        res.put("message", "authorization-failed");
+        if (verfyJWTAccess(request()) == true) {
+            return ok(taskDAO.getClientRequest(id));
+        }
+        return ok(Json.toJson(res));
+    }
+
+
+    public Result assignCourierByManual(Http.Request request) {
+        Map<String, String> res = new HashMap<>();
+        res.put("status", "failed");
+        res.put("message", "authorization-failed");
+        if (verfyJWTAccess(request) == true) {
+            JsonNode req = request.body().asJson();
+            String courierID = req.findPath("courier_id").textValue();
+            String responseID = req.findPath("response_id").textValue();
+
+            return ok(this.taskDAO.assignCourierById(courierID, responseID));
+        }
+
+        return ok(Json.toJson(res));
+    }
+
+
+    public Result getCourierStatus(String id) {
+        Map<String, String> res = new HashMap<>();
+        res.put("status", "failed");
+        res.put("message", "authorization-failed");
+        if (verfyJWTAccess(request()) == true) {
+            return ok(taskDAO.checkCourierStatus(id));
+        }
+        return ok(Json.toJson(res));
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     //jwt authorization and authentication

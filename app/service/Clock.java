@@ -34,8 +34,18 @@ public class Clock {
         return DAY_BEFORE_DATE = (dtf.format(dayBefore));
     }
 
-    public Long getCurrentDateAsEpoch() {
-        return ts.getTime();
+    public Long getMillCurrentDate() {
+        long currentEpoch = new Date(getCurrentDate()).getTime();
+        return currentEpoch;
+    }
+
+    public Long getMillCurrentEpoch() {
+        return new Date().getTime();
+    }
+
+    public Long getMillPriviousDate() {
+        long dayBeforeEpoch = new Date(getDayBeforeDate()).getTime();
+        return dayBeforeEpoch;
     }
 
 

@@ -35,7 +35,6 @@ public class Mongo {
 
         }
     }
-
     //Load configuration from Module Class
     public static void setConfiguration(Config configuration) {
         Mongo.configuration = configuration;

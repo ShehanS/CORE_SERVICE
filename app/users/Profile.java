@@ -24,10 +24,6 @@ public class Profile extends ExternalAPIDAO {
  }
 
 
-
-
-
-
     public void addOneDocument() {
 
         MongoCollection<Document> collection = db.getCollection("sampleCollection");

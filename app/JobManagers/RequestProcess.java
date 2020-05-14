@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import model.Response;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bson.Document;
 import play.libs.Json;
 import users.TaskDAO;
 
@@ -55,7 +56,7 @@ public class RequestProcess {
         JsonNode saveResponse = taskDAO.addResponse(Json.toJson(response));
 
         if (saveResponse.findPath("status").textValue() == "success") {
-            responseMessage.put("message", "RequestProcess complected");
+            responseMessage.put("message", "Request Process complected");
             responseMessage.put("request_id", saveResponse.findPath("id").textValue());
             responseMessage.put("status", saveResponse.findPath("status").textValue());
             return Json.toJson(responseMessage);

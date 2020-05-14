@@ -362,5 +362,31 @@ private JWTUtils jwtUtils;
     }
 
 
+    public Result undoCourierJob(String qrID) {
+        Map<String, String> res = new HashMap<>();
+        JsonNode update = request().body().asJson();
+        res.put("status", "failed");
+        res.put("message", "authorization-failed");
+        if (verfyJWTAccess(request()) == true) {
+            return ok(taskDAO.undoJobTranser(qrID, update));
+
+        }
+        return ok(Json.toJson(res));
+    }
+
+
+    public Result getClientHistory(String userID) {
+        Map<String, String> res = new HashMap<>();
+        JsonNode update = request().body().asJson();
+        res.put("status", "failed");
+        res.put("message", "authorization-failed");
+        if (verfyJWTAccess(request()) == true) {
+            return ok(taskDAO.getClientHistory(userID));
+
+        }
+        return ok(Json.toJson(res));
+    }
+
+
 
 }
