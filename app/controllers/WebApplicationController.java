@@ -1,6 +1,7 @@
 package controllers;
 
 import JWT.JWTUtils;
+import analytic.Analytic;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.bson.Document;
 import play.libs.Json;
@@ -19,12 +20,14 @@ import JobManagers.RequestProcess;
 public class WebApplicationController extends Controller {
     private TaskDAO taskDAO;
     private JWTUtils jwtUtils;
+    private Analytic analytic;
 
 
     @Inject
-    public WebApplicationController(TaskDAO taskDAO, JWTUtils jwtUtils) {
+    public WebApplicationController(TaskDAO taskDAO, JWTUtils jwtUtils, Analytic analytic) {
         this.taskDAO = taskDAO;
         this.jwtUtils = jwtUtils;
+        this.analytic = analytic;
     }
 
     public Result getAllJobs(Http.Request request) {
@@ -118,6 +121,28 @@ public class WebApplicationController extends Controller {
         res.put("message", "authorization-failed");
         if (verfyJWTAccess(request()) == true) {
             return ok(taskDAO.checkCourierStatus(id));
+        }
+        return ok(Json.toJson(res));
+    }
+
+
+    public Result getJobStatus(String id) {
+        Map<String, String> res = new HashMap<>();
+        res.put("status", "failed");
+        res.put("message", "authorization-failed");
+        if (verfyJWTAccess(request()) == true) {
+            return ok(taskDAO.gettingJobStatus(id));
+        }
+        return ok(Json.toJson(res));
+    }
+
+
+    public Result getInventoryStatus(Http.Request request) {
+        Map<String, String> res = new HashMap<>();
+        res.put("status", "failed");
+        res.put("message", "authorization-failed");
+        if (verfyJWTAccess(request()) == true) {
+            return ok(analytic.getInventoryDetails());
         }
         return ok(Json.toJson(res));
     }

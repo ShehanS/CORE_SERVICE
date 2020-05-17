@@ -730,6 +730,16 @@ public class TaskDAO extends ExternalAPIDAO {
     }
 
 
+    //getting job status
+
+    public JsonNode gettingJobStatus(String id) {
+        BasicDBObject query = new BasicDBObject();
+        query.put("_id", new ObjectId(id));
+        Document doc = getSingelDocuent(RESPONSE, query);
+        return Json.toJson(doc);
+    }
+
+
     public JsonNode getUserAndQueryDetails(String id) {
         Document result = aggregateQuery("client_request", "client_request", "_id", "request_details", "_id", id, "response");
         return Json.toJson(result);
@@ -910,7 +920,7 @@ public class TaskDAO extends ExternalAPIDAO {
         BasicDBObject newDocument = new BasicDBObject();
         newDocument.put("courier_status", update.findPath("courier_status").textValue());
         newDocument.put("comment", update.findPath("comment").textValue());
-        newDocument.put("status", "complete");
+        newDocument.put("status", update.findPath("courier_status").textValue());
         query.put("_id", new ObjectId(id));
         Document jobDetails = aggregateQuery3("client_request", "client_request", "_id", "request_details", "_id", id, "response");
         // courier.put("user_id",jobDetails.getString("user_id"));

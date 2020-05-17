@@ -53,6 +53,9 @@ GET      /web/client-request/:id        controllers.WebApplicationController.get
 GET      /web/courier-status/:id        controllers.WebApplicationController.getCourierStatus(id: String)
 POST     /web/manual-assign             controllers.WebApplicationController.assignCourierByManual(request: Request)
 
+POST     /web/analytic-inventory             controllers.WebApplicationController.getInventoryStatus(request: Request)
+
+GET      /web/get-job-status/:id        controllers.WebApplicationController.getJobStatus(id: String)
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
