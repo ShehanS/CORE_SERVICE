@@ -1,18 +1,21 @@
 package controllers;
+
+import AESEncryptionDecryption.ASE;
 import JWT.JWTUtils;
 import JobManagers.RequestProcess;
 import com.fasterxml.jackson.databind.JsonNode;
 import play.libs.Json;
-import play.mvc.*;
+import play.mvc.Controller;
+import play.mvc.Http;
+import play.mvc.Result;
 import service.Clock;
 import users.TaskDAO;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-
-import AESEncryptionDecryption.ASE;
 
 /**
  *Created by Shehan Shalinda. This is my final project backed service.
@@ -43,7 +46,6 @@ private JWTUtils jwtUtils;
         this.ase = ase;
         this.requestProcess = requestProcess;
         this.clock = clock;
-
     }
 
     /**
@@ -55,9 +57,7 @@ private JWTUtils jwtUtils;
 
     /**
      *getAllUsers
-     * @param request this request prams is comming from routes module,
-     *                checking user and return access token and session
-     *
+     * @param request this request prams is will come post,put,get,delete     *
      * @return
      */
     public Result login(Http.Request request) {
@@ -66,9 +66,7 @@ private JWTUtils jwtUtils;
         JsonNode user = taskDAO.findLoginUser(userLogin);
         requestProcess.requestProcess();
         taskDAO.getCurrentRequestQue();
-
         return ok(user);
-
     }
 
 

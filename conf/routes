@@ -17,6 +17,10 @@ POST     /api/get-config                controllers.HomeController.getFactoryCon
 POST     /api/request                    controllers.HomeController.clientRequest(request: Request)
 POST     /api/create-user                controllers.HomeController.createUser(request: Request)
 POST     /api/login                      controllers.HomeController.login(request: Request)
+
+
+
+
 DELETE   /api/delete/:id                 controllers.HomeController.delete(id: String)
 
 GET      /api/user/:id                   controllers.HomeController.selectUser(id: String)
@@ -53,7 +57,9 @@ GET      /web/client-request/:id        controllers.WebApplicationController.get
 GET      /web/courier-status/:id        controllers.WebApplicationController.getCourierStatus(id: String)
 POST     /web/manual-assign             controllers.WebApplicationController.assignCourierByManual(request: Request)
 
-POST     /web/analytic-inventory             controllers.WebApplicationController.getInventoryStatus(request: Request)
+POST    /web/get-all-client-request      controllers.WebApplicationController.getAllClientRequest(request: Request)
+
+GET     /web/analytic-inventory             controllers.WebApplicationController.getInventoryStatus()
 
 GET      /web/get-job-status/:id        controllers.WebApplicationController.getJobStatus(id: String)
 

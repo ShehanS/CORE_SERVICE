@@ -1,11 +1,13 @@
 package ExternalAPIs;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mongodb.*;
-import com.mongodb.MongoClient;
-import com.mongodb.client.*;
-import com.mongodb.client.model.Aggregates;
+import com.mongodb.client.AggregateIterable;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
+import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
@@ -19,9 +21,9 @@ import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import play.libs.Json;
+
 import javax.naming.directory.SearchResult;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
@@ -217,7 +219,7 @@ public class ExternalAPIDAO {
         return (document);
     }
 
-
+    //return single document after query
     protected Document getSingelDocuent(String col, BasicDBObject query) {
 
         log.info("{{Class-" + TAG + " : method-getSingelDocuent}}-Get document: query-" + query);
@@ -241,7 +243,7 @@ public class ExternalAPIDAO {
         return (document);
     }
 
-
+    //return multiple document after query
     protected ArrayList<Response> getAllResponseByQuery(String col, BasicDBObject query, int order) {
         collection = db.getCollection(col);
         log.info("{{Class-" + TAG + " : method-getAllResponseByQuery}}-Get document: query-" + query);
@@ -415,6 +417,7 @@ public class ExternalAPIDAO {
             Document result = null;
             log.info("{{Class-" + TAG + " : method-aggregateQuery3}}");
             Bson project = new Document("$project", new Document("client_obj_request", new Document("$toObjectId", "$client_request"))
+                    .append("response_id", "_id")
                     .append("date_time", "$date_time")
                     .append("user_id", "$user_id")
                     .append("first_name", "$first_name")

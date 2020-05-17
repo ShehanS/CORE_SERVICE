@@ -1,11 +1,15 @@
 package database;
 
-import com.mongodb.*;
+import com.mongodb.MongoClient;
+import com.mongodb.MongoClientOptions;
+import com.mongodb.MongoClientOptions.Builder;
+import com.mongodb.MongoException;
+import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoDatabase;
 import com.typesafe.config.Config;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import com.mongodb.MongoClientOptions.Builder;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -17,7 +21,11 @@ public class Mongo {
     private static Mongo mongo = null;
     private static Config configuration;
 
-    //Create Mongo Connection and export
+    /*
+    Database connection manager. all the configuration are getting from
+    application.conf
+
+     */
     @Inject
     private Mongo() {
         try {

@@ -3,11 +3,9 @@ package users;
 import AESEncryptionDecryption.ASE;
 import ExternalAPIs.ExternalAPIDAO;
 import JWT.JWTUtils;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import database.Mongo;
 import model.Response;
@@ -338,6 +336,8 @@ public class TaskDAO extends ExternalAPIDAO {
         Document document = Document.parse(r.toString());
         JsonNode user = findUserById(r.findPath("user_id").asText());
         document.append("contact", user.findPath("contact").textValue());
+        document.append("status", "processing");
+        document.append("status_time", new Date().getTime());
         String objectId = insertDoc(document, CLIENT_REQEST_COLLECTION).toString();
         Map<String, Object> response = new HashMap<>();
         response.put("status", "success");
@@ -688,6 +688,16 @@ public class TaskDAO extends ExternalAPIDAO {
     }
 
 
+    public JsonNode getAllClientRequest(JsonNode request) {
+        ArrayList<Document> AllRequest = new ArrayList<>();
+        log.info("Date - in query " + request.findPath("start_date").asLong() + " to " + request.findPath("end_date").asLong());
+        BasicDBObject searchQuery = new BasicDBObject();
+        searchQuery.put("date_time", new BasicDBObject("$gt", request.findPath("start_date").asLong()).append("$lte", request.findPath("end_date").asLong()));
+        AllRequest = getQueryDoc(CLIENT_REQEST_COLLECTION, searchQuery); //// issuese
+        return Json.toJson(AllRequest);
+    }
+
+
     public ArrayList<Response> getCurrentPendingRequestQueDateWise(JsonNode request) {
         log.info("Date - in query " + request.findPath("start_date").asLong() + " to " + request.findPath("end_date").asLong());
         BasicDBObject searchQuery = new BasicDBObject();
@@ -915,6 +925,7 @@ public class TaskDAO extends ExternalAPIDAO {
         Clock clock = new Clock();
         Document transaction = new Document();
         Map<String, Object> courier = new HashMap<>();
+        BasicDBObject newClientRequestStatus = new BasicDBObject();
         ArrayList<Object> history = new ArrayList<>();
         BasicDBObject query = new BasicDBObject();
         BasicDBObject newDocument = new BasicDBObject();
@@ -923,6 +934,19 @@ public class TaskDAO extends ExternalAPIDAO {
         newDocument.put("status", update.findPath("courier_status").textValue());
         query.put("_id", new ObjectId(id));
         Document jobDetails = aggregateQuery3("client_request", "client_request", "_id", "request_details", "_id", id, "response");
+
+        BasicDBObject clientQuery = new BasicDBObject();
+        clientQuery.put("_id", new ObjectId(jobDetails.getString("client_request")));
+        newClientRequestStatus.put("status", "accepted");
+        Document clientRequest = getSingelDocuent(CLIENT_REQEST_COLLECTION, clientQuery);
+
+        if ((clientRequest.get("status").equals("accepted"))) {
+            newClientRequestStatus.put("status", "complected");
+            newClientRequestStatus.put("status_time", new Date().getTime());
+            updateDoc(CLIENT_REQEST_COLLECTION, clientQuery, newClientRequestStatus);
+        }
+
+
         // courier.put("user_id",jobDetails.getString("user_id"));
         courier.put("first_name", jobDetails.getString("first_name"));
         courier.put("last_name", jobDetails.getString("last_name"));
@@ -941,7 +965,7 @@ public class TaskDAO extends ExternalAPIDAO {
         transaction.put("client_request", jobDetails.get("request_details"));
         transaction.put("qr_id", id);
         transaction.put("couriers", history);
-
+        updateDoc(CLIENT_REQEST_COLLECTION, clientQuery, newClientRequestStatus);
         insertDoc(transaction, TRANSACTION);
         return (updateDoc(RESPONSE, query, newDocument));
     }
@@ -956,7 +980,6 @@ public class TaskDAO extends ExternalAPIDAO {
         Document updatedPreviousJob = new Document();
         String qrID;
         query.put("qr_id", id);
-
         Document job = getQueryOneDoc(TRANSACTION, query);
         List<Document> clientRequest = (List<Document>) job.get("client_request");
         List<Document> courierList = (List<Document>) job.get("couriers");

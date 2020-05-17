@@ -3,7 +3,6 @@ package controllers;
 import JWT.JWTUtils;
 import analytic.Analytic;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.bson.Document;
 import play.libs.Json;
 import play.mvc.Controller;
 import play.mvc.Http;
@@ -14,8 +13,6 @@ import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-
-import JobManagers.RequestProcess;
 
 public class WebApplicationController extends Controller {
     private TaskDAO taskDAO;
@@ -137,7 +134,7 @@ public class WebApplicationController extends Controller {
     }
 
 
-    public Result getInventoryStatus(Http.Request request) {
+    public Result getInventoryStatus() {
         Map<String, String> res = new HashMap<>();
         res.put("status", "failed");
         res.put("message", "authorization-failed");
@@ -148,7 +145,16 @@ public class WebApplicationController extends Controller {
     }
 
 
-
+    public Result getAllClientRequest(Http.Request request) {
+        JsonNode appRequest = request.body().asJson();
+        Map<String, String> res = new HashMap<>();
+        res.put("status", "failed");
+        res.put("message", "authorization-failed");
+        if (verfyJWTAccess(request) == true) {
+            return ok(Json.toJson(taskDAO.getAllClientRequest(appRequest)));
+        }
+        return ok(Json.toJson(res));
+    }
 
 
 

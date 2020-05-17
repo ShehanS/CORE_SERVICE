@@ -3,8 +3,6 @@ package analytic;
 import ExternalAPIs.ExternalAPIDAO;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.mongodb.BasicDBObject;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
 import database.Mongo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,7 +11,6 @@ import play.libs.Json;
 import service.Clock;
 
 import javax.inject.Inject;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -61,6 +58,7 @@ public class Analytic extends ExternalAPIDAO {
         details.put("inventory_in", systemIN);
         details.put("inventory_out", systemOUT);
         details.put("total_que", result.size());
+        details.put("result", result);
 
         //details.put()
 
